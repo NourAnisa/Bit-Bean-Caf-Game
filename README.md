@@ -1,46 +1,36 @@
-# Bit & Bean — Golden Hour Café
+# Bit & Bean — Behind the Bar (v2)
 
-Game kafe **3D real-time** dengan Three.js: interior diorama, mesin espresso, counter kayu, pelanggan, tanaman, lampu gantung, bayangan dinamis, animasi uap, dan tiga sudut kamera. Bukan gambar latar yang diberi label 3D. Gaya visual stylized, bukan fotorealistis/AAA.
+Perombakan menjadi simulator barista orang pertama. Versi pertama masih tersedia dalam riwayat Git; versi ini mengganti panel pilih-bahan dengan berjalan dan memakai stasiun di ruang 3D.
 
-## Bermain
+## Kontrol dan alur
 
-Baca resep pada tiket. Klik setiap bahan sesuai jumlah resep lalu **Sajikan pesanan**. Urutan bahan bebas. Racikan salah akan dikosongkan tanpa pendapatan. Jika waktu habis, sesi berakhir. Menu **Jeda** menghentikan timer; berpindah tab juga menghentikannya.
+WASD bergerak dalam koridor bar yang dibatasi agar tidak menembus meja. Seret layar untuk melihat. E memakai stasiun terdekat jika berjarak horizontal kurang dari 0,68 unit dan cukup dekat meja. Tidak perlu membidik tepat dengan crosshair. Tombol gerak/interaksi juga tersedia di layar.
 
-- Shift 1: 3 pesanan, 55 detik per pesanan, Americano dan Kopi Susu.
-- Shift 2: 4 pesanan, 45 detik, tambahan Kopi Susu Gula Aren dan Matcha Latte.
-- Shift 3: 5 pesanan, 35 detik, tambahan Waffle Cokelat dan Chocolate Latte.
-- Kontrol: klik/sentuh, Tab dan Enter untuk tombol, tombol Putar kamera untuk 3 sudut.
-- Grafik tinggi menggunakan shadow map 2048 dan resolusi maksimum 2x. Pilih hemat untuk mematikan bayangan dan mengurangi resolusi.
-- Harga adalah nilai simulasi game. Tidak ada transaksi nyata. Sesi tidak disimpan; hanya pendapatan terbaik tersimpan lokal jika storage tersedia.
+1. Ambil gelas dari rak.
+2. Giling kopi (2 detik).
+3. Pada mesin: padatkan, tekan lagi untuk memulai ekstraksi.
+4. Tekan E lagi di mesin pada 4–7 detik untuk hasil terbaik. Lewat 12 detik pompa berhenti otomatis dengan kualitas rendah.
+5. Tambahkan air untuk Americano atau susu untuk Kopi Susu (2,5 detik).
+6. Serahkan pesanan di terminal.
+7. Bersihkan mesin di bak cuci sebelum memulai racikan berikutnya. Bak juga membuang gelas yang masih di tangan.
 
-## Menjalankan
+9 pesanan dalam tiga tahap dengan kesabaran 150, 125, lalu 100 detik. Tiga pelanggan pergi mengakhiri sesi. Tip mengikuti kualitas ekstraksi dan combo. Tidak ada transaksi uang nyata. Waktu merupakan penyederhanaan game, bukan panduan membuat espresso nyata.
 
-Gunakan server HTTP, **bukan** membuka file langsung, karena game memakai ES modules:
+## Perubahan visual dan interaksi
 
-```sh
-python3 -m http.server 8000
-```
+Kamera first-person dengan gerakan kepala ringan, tangan dan gelas mengikuti kamera, aliran minuman serta uap, tekstur serat kayu prosedural, label stasiun, suara sintetis mesin, animasi pelanggan berpindah setelah pelayanan. Grafik tinggi atau hemat. Perspektif menu masih diorama.
 
-Buka `http://localhost:8000`. Memerlukan internet untuk Three.js versi tetap `0.180.0` dari jsDelivr dan browser modern dengan WebGL2/akselerasi grafis. Jika CDN atau WebGL tidak tersedia, halaman menampilkan pesan dan menonaktifkan tombol mulai, bukan berpura-pura memiliki grafik 3D.
+Fokus versi ini adalah dua resep lengkap. Enam resep tombol pada versi lama, termasuk waffle, tidak disertakan dalam gameplay v2. Belum ada fisika cairan, tangan rigged realistis, antrean AI kompleks, atau model fotorealistis. Stok tidak terbatas. Tidak ada simpan sesi. Semua pekerjaan/timer berhenti saat jeda atau tab tidak aktif.
 
-## GitHub Pages
+## Menjalankan dan publikasi
 
-Pada repositori pilih **Settings > Pages > Deploy from a branch > main > /(root) > Save**. Gunakan URL yang ditampilkan GitHub setelah publikasi selesai. Tidak perlu build atau workflow custom. Mengunggah file tidak otomatis mengaktifkan Pages.
+Server lokal: `python3 -m http.server 8000`, buka localhost:8000. Memerlukan internet untuk Three.js 0.180.0 dari jsDelivr dan WebGL2. Jangan buka index.html dengan file://.
 
-## Struktur
+GitHub Pages: Settings > Pages > Deploy from a branch > main > /(root) > Save. Jika sudah aktif, push ke main memicu publikasi sesuai pengaturan repositori. Gunakan URL yang ditampilkan GitHub.
 
-- `scene.js`: mesh, material, cahaya, kamera, bayangan, animasi.
-- `engine.mjs`: aturan resep, pendapatan, shift, dan waktu.
-- `app.js`: UI dan integrasi gameplay.
-- `index.html`, `style.css`: tampilan dan panel responsif.
-- `engine.test.mjs`: pengujian aturan permainan.
+## Pengujian
 
-Jalankan `node --test engine.test.mjs`. Tes logika tidak menjamin performa/penampilan grafis pada setiap perangkat.
+`node --test engine.test.mjs` memeriksa urutan proses, durasi, kualitas ekstraksi, resep salah, kebersihan, kekalahan, dan penyelesaian 9 pesanan. Tes unit tidak menggantikan pengujian tampilan dan performa GPU.
 
-## Materi Pertemuan 3
-
-Navigasi: menu, panduan, permainan, jeda, hasil shift, kemenangan/kekalahan. Core loop: menerima pesanan, meracik, mencocokkan resep, menyajikan, menerima pendapatan. Asset: geometri 3D mesin kopi, gelas, counter, pelanggan, tanaman, dan UI. Progresi: variasi resep meningkat, waktu menurun. Latihan: tambah resep, perbaiki animasi pelanggan, atau pisahkan stasiun waffle.
-
-Seluruh model dibuat secara prosedural di kode. Ini prototype dengan interaksi melalui panel, belum simulasi berjalan bebas atau menuangkan cairan secara fisik. Tidak ada audio di versi awal.
-
-Three.js: https://threejs.org/ (lisensi MIT). Modul dimuat dari CDN, tidak disalin ke repositori.
+File: engine.mjs (state dan aturan), scene.js (3D, kamera, gerak), app.js (UI, audio, timer), index.html, style.css.
+Three.js berlisensi MIT: https://threejs.org/

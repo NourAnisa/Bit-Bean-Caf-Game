@@ -1,23 +1,19 @@
-export const ingredients={coffee:'Espresso',water:'Air panas',milk:'Susu',sugar:'Gula aren',matcha:'Matcha',waffle:'Waffle',chocolate:'Cokelat'};
-export const recipes=[
- {name:'Americano',items:['coffee','water'],price:10000},
- {name:'Kopi Susu',items:['coffee','milk'],price:12000},
- {name:'Kopi Susu Gula Aren',items:['coffee','milk','sugar'],price:12000},
- {name:'Matcha Latte',items:['matcha','milk'],price:12000},
- {name:'Waffle Cokelat',items:['waffle','chocolate'],price:10000},
- {name:'Chocolate Latte',items:['chocolate','milk'],price:12000}
-];
-export const shifts=[{name:'01 / Pembukaan kafe',orders:[0,1,0],seconds:55},{name:'02 / Sore yang hangat',orders:[2,3,1,2],seconds:45},{name:'03 / Golden hour',orders:[4,5,2,3,4],seconds:35}];
-export function fresh(){return{shift:0,index:0,mix:[],cash:0,served:0,mistakes:0,left:55,status:'playing'};}
-export function order(s){return recipes[shifts[s.shift].orders[s.index]];}
-export function add(s,id){if(s.status!=='playing'||!ingredients[id]||s.mix.length>=4)return false;s.mix.push(id);return true;}
-export function serve(s){
- if(s.status!=='playing')return false;
- if([...s.mix].sort().join(',')!==[...order(s).items].sort().join(',')){s.mistakes++;s.mix=[];return false;}
- s.cash+=order(s).price;s.served++;s.mix=[];s.index++;
- if(s.index>=shifts[s.shift].orders.length){s.index--;s.status=s.shift===2?'won':'complete';}
- else s.left=shifts[s.shift].seconds;
- return true;
+export const stations=[{id:'cups',x:1.1,name:'Rak gelas'},{id:'grinder',x:-3.35,name:'Penggiling kopi'},{id:'machine',x:-2.05,name:'Mesin espresso'},{id:'milk',x:-.3,name:'Pitcher susu'},{id:'water',x:2.2,name:'Air panas'},{id:'serve',x:3.2,name:'Serahkan pesanan'},{id:'sink',x:-4.7,name:'Bak cuci'}];
+export const orders=['Americano','Kopi Susu','Americano','Kopi Susu','Americano','Kopi Susu','Americano','Kopi Susu','Kopi Susu'];
+export function fresh(){return{status:'playing',index:0,served:0,missed:0,cash:0,combo:0,patience:150,cup:null,dirty:false,job:null,brew:0,quality:0,message:'Ambil gelas dari rak. Dekati stasiun, lalu tekan E.'};}
+export function order(s){return orders[Math.min(s.index,orders.length-1)];}
+export function hint(s){if(s.job)return s.job.type==='brew'?'Tekan E di mesin saat 4–7 detik.':'Proses berlangsung…';if(!s.cup)return 'Rak gelas → penggiling → mesin espresso';if(!s.cup.ground)return 'Giling biji kopi.';if(!s.cup.tamped)return 'Padatkan kopi di mesin espresso.';if(!s.cup.espresso)return s.dirty?'Bersihkan mesin di bak cuci.':'Tekan mesin untuk memulai ekstraksi.';if(!s.cup.addition)return order(s)==='Americano'?'Tambahkan air panas.':'Tuang susu dari pitcher.';return 'Serahkan minuman kepada pelanggan.';}
+function advance(s){s.index++;s.cup=null;s.job=null;s.brew=0;s.patience=150-Math.min(2,Math.floor(s.index/3))*25;if(s.index>=orders.length)s.status=s.served>=6?'won':'lost';}
+export function act(s,id){
+ if(s.status!=='playing')return;
+ const say=t=>s.message=t;
+ if(s.job){if(s.job.type==='brew'&&id==='machine'){s.quality=s.brew>=4&&s.brew<=7?100:s.brew>=2&&s.brew<10?60:20;s.cup.espresso=true;s.job=null;s.dirty=true;return say(s.quality===100?'Ekstraksi seimbang! Lanjutkan resep.':'Ekstraksi kurang tepat. Tip berkurang.');}return say('Selesaikan proses yang sedang berjalan.');}
+ if(id==='sink'){s.cup=null;s.dirty=false;return say('Gelas dibuang dan mesin dibersihkan. Ambil gelas baru.');}
+ if(id==='cups'){if(s.cup)return say('Gelas masih di tangan. Buang di bak cuci jika ingin mengulang.');s.cup={ground:false,tamped:false,espresso:false,addition:null};return say('Gelas diambil. Giling biji kopi.');}
+ if(!s.cup)return say('Ambil gelas dahulu.');
+ if(id==='grinder'){if(s.cup.ground)return say('Kopi sudah digiling.');s.job={type:'grind',left:2,total:2};return say('Menggiling biji kopi…');}
+ if(id==='machine'){if(!s.cup.ground)return say('Giling biji dahulu.');if(!s.cup.tamped){s.cup.tamped=true;return say('Kopi dipadatkan. Tekan E lagi untuk ekstraksi.');}if(s.cup.espresso)return say('Espresso sudah siap.');if(s.dirty)return say('Mesin kotor. Cuci di bak: racikan saat ini akan dibuang.');s.job={type:'brew',left:12,total:12};s.brew=0;return say('Pompa menyala. Hentikan pada rentang 4–7 detik!');}
+ if(id==='milk'||id==='water'){if(!s.cup.espresso)return say('Buat espresso dahulu.');if(s.cup.addition)return say('Bahan tambahan sudah dituang.');s.job={type:id,left:2.5,total:2.5};return say(id==='milk'?'Menuang susu…':'Menuang air panas…');}
+ if(id==='serve'){const required=order(s)==='Americano'?'water':'milk';if(!s.cup.espresso||s.cup.addition!==required){s.combo=0;return say('Resep belum sesuai. Periksa tiket atau ulangi di bak cuci.');}s.served++;s.combo++;const tip=Math.round(s.quality/100*1500+Math.min(s.combo,5)*200);s.cash+=(required==='water'?10000:12000)+tip;advance(s);return say('Pesanan diterima! Tip Rp'+tip+'. Cuci mesin sebelum kopi berikutnya.');}
 }
-export function next(s){if(s.status!=='complete')return false;s.shift++;s.index=0;s.left=shifts[s.shift].seconds;s.status='playing';return true;}
-export function tick(s,dt){if(s.status==='playing'&&Number.isFinite(dt)&&dt>0){s.left=Math.max(0,s.left-dt);if(!s.left)s.status='lost';}}
+export function tick(s,dt){if(s.status!=='playing'||!Number.isFinite(dt)||dt<=0)return;s.patience=Math.max(0,s.patience-dt);if(!s.patience){s.missed++;s.combo=0;advance(s);s.message='Pelanggan pergi. Pesanan berikutnya masuk.';if(s.missed>=3)s.status='lost';return;}if(s.job){s.job.left-=dt;if(s.job.type==='brew')s.brew+=dt;if(s.job.left<=0){const type=s.job.type;s.job=null;if(type==='grind')s.cup.ground=true;else if(type==='brew'){s.cup.espresso=true;s.quality=20;s.dirty=true;s.message='Ekstraksi terlalu lama. Kopi menjadi pahit.';}else s.cup.addition=type;}}}
